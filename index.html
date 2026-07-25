@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neurofarmacología del Dolor | Atlas Interactivo 2026</title>
+    
+    <!-- Fonts and Tailwind CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Phosphor Icons for medical UI elements -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        :root {
+            --bg-app: #080c16;
+            --bg-panel: #111827;
+            --bg-card: #1f2937;
+            --border-light: rgba(255, 255, 255, 0.08);
+            
+            /* Pathway Colors */
+            --path-somatic: #ef4444; /* Red for somatic pain */
+            --path-visceral: #10b981; /* Green for autonomic/vagal */
+            --path-descending: #06b6d4; /* Cyan for inhibition */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-app);
+            color: #f3f4f6;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- Custom Scrollbar --- */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-panel); }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+
+        /* --- Header & Layout --- */
+        header {
+            height: 64px;
+            background: rgba(8, 12, 22, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            z-index: 50;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 64px);
+            overflow: hidden;
+        }
+
+        /* --- SVG Workspace (Left Side) --- */
+        .workspace {
+            flex: 1.2;
+            position: relative;
+            background: radial-gradient(circle at center, #111827 0%, #080c16 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            max-height: 90vh;
+            filter: drop-shadow(0 15px 30px rgba(0,0,0,0.6));
+        }
+
+        /* Animated Pathways */
+        .tract-somatic { stroke: var(--path-somatic); stroke-width: 2.5; fill: none; stroke-dasharray: 6,4; animation: flowUp 15s linear infinite; }
+        .tract-visceral { stroke: var(--path-visceral); stroke-width: 2; fill: none; stroke-dasharray: 4,4; animation: flowUp 20s linear infinite; }
+        .tract-descending { stroke: var(--path-descending); stroke-width: 2.5; fill: none; stroke-dasharray: 6,4; animation: flowDown 15s linear infinite; }
+        
+        @keyframes flowUp { to { stroke-dashoffset: -1000; } }
+        @keyframes flowDown { to { stroke-dashoffset: 1000; } }
+
+        /* Interactive Anatomy Nodes */
+        .node-group {
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .node-hitbox { fill: transparent; stroke: transparent; r: 30; }
+        
+        .node-core {
+            transition: all 0.3s ease;
+            stroke-width: 1.5px;
+            stroke: rgba(255,255,255,0.2);
+        }
+
+        .node-group:hover .node-core {
+            filter: brightness(1.5) drop-shadow(0 0 10px rgba(255,255,255,0.5));
+            stroke-width: 3px;
+            stroke: #ffffff;
+            transform: scale(1.2);
+            transform-origin: center;
+        }
+
+        .node-label {
+            font-size: 13px;
+            font-weight: 500;
+            opacity: 0.8;
+            transition: all 0.2s;
+            pointer-events: none;
+        }
+        
+        .node-group:hover .node-label { opacity: 1; font-weight: 700; fill: #ffffff; }
+
+        /* --- Info Panel (Right Side) --- */
+        .info-panel {
+            width: 45%;
+            min-width: 450px;
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            box-shadow: -20px 0 40px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        #empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .panel-header {
+            padding: 2rem 2rem 1.5rem;
+            background: linear-gradient(180deg, rgba(31,41,55,0.4) 0%, transparent 100%);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Tab Navigation */
+        .tab-nav {
+            display: flex;
+            background: #0f141e;
+            border-bottom: 1px solid #374151;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 1rem 0;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #9ca3af;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn:hover { color: #f3f4f6; background: rgba(255,255,255,0.02); }
+        .tab-btn.active { color: #ffffff; }
+        .tab-btn.active[data-tab="fisiologia"] { border-color: #38bdf8; }
+        .tab-btn.active[data-tab="bloqueadores"] { border-color: #f87171; }
+        .tab-btn.active[data-tab="agonistas"] { border-color: #10b981; }
+
+        /* Tab Content */
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            display: none;
+            animation: fadeIn 0.3s ease forwards;
+        }
+        .tab-content.active { display: block; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Typography inside content */
+        .content-body p { margin-bottom: 1rem; line-height: 1.7; color: #d1d5db; }
+        .content-body ul { padding-left: 1.5rem; margin-bottom: 1.5rem; list-style-type: disc; color: #d1d5db; }
+        .content-body li { margin-bottom: 0.5rem; }
+        .content-body strong { color: #ffffff; }
+
+        .drug-card {
+            background: rgba(31, 41, 55, 0.4);
+            border: 1px solid var(--border-light);
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid;
+        }
+        .drug-card.blocker { border-left-color: #f87171; }
+        .drug-card.agonist { border-left-color: #10b981; }
+        
+        .tag-new {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            font-size: 0.65rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="flex items-center gap-3">
+            <i class="ph-fill ph-brain text-3xl text-cyan-400"></i>
+            <div>
+                <h1 class="text-xl font-bold text-white tracking-tight">Neurofarmacología <span class="font-normal text-slate-400">Atlas Interactivo</span></h1>
+            </div>
+        </div>
+        <div class="flex gap-6 text-sm font-medium">
+            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]"></span> Vía Ascendente (Dolor)</div>
+            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></span> Red Visceral (NTS/PB)</div>
+            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-cyan-500 shadow-[0_0_8px_#06b6d4]"></span> Vía Descendente (Modulación)</div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        
+        <div class="workspace">
+            <svg viewBox="0 0 1000 1200" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <!-- Anatomical Gradients -->
+                    <linearGradient id="brainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#334155" />
+                        <stop offset="100%" stop-color="#1e293b" />
+                    </linearGradient>
+                    <radialGradient id="thalamusGrad" cx="40%" cy="40%" r="60%">
+                        <stop offset="0%" stop-color="#64748b" />
+                        <stop offset="100%" stop-color="#334155" />
+                    </radialGradient>
+                    <linearGradient id="skinGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#fbcfe8" stop-opacity="0.2"/>
+                        <stop offset="50%" stop-color="#475569" stop-opacity="0.6"/>
+                        <stop offset="100%" stop-color="#ca8a04" stop-opacity="0.1"/>
+                    </linearGradient>
+
+                    <!-- Glow Filters for pathways -->
+                    <filter id="glowRed"><feGaussianBlur stdDeviation="3" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over" /></filter>
+                    <filter id="glowCyan"><feGaussianBlur stdDeviation="3" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over" /></filter>
+                    <filter id="glowGreen"><feGaussianBlur stdDeviation="3" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over" /></filter>
+                </defs>
+
+                <!-- ================= STATIC ANATOMY BACKGROUND ================= -->
+                
+                <!-- Hemisferio Cerebral (Corte Sagital) -->
+                <path d="M 450,80 C 250,80 250,380 350,450 C 400,480 450,480 480,480 C 680,480 780,350 720,180 C 680,50 500,80 450,80 Z" fill="url(#brainGrad)" stroke="#475569" stroke-width="2"/>
+                <!-- Surco Central (Rolando) & Giro Postcentral -->
+                <path d="M 520,80 Q 540,250 500,360" fill="none" stroke="#475569" stroke-width="4" stroke-linecap="round"/>
+                <path d="M 520,80 Q 540,250 500,360 Q 580,320 590,90 Z" fill="#38bdf8" opacity="0.1"/>
+                
+                <!-- Sistema Límbico (Cíngulo) -->
+                <path d="M 480,200 C 400,200 380,280 420,340 C 460,380 540,340 580,280 C 600,240 540,200 480,200 Z" fill="#c084fc" opacity="0.1" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="4,4"/>
+                
+                <!-- Cerebelo -->
+                <path d="M 700,440 C 780,470 780,580 660,620 C 600,580 620,470 700,440 Z" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+                <path d="M 680,470 Q 730,500 750,550 M 650,500 Q 700,540 700,590" fill="none" stroke="#334155" stroke-width="2"/> <!-- Folia -->
+
+                <!-- Tronco Encefálico (Mesencéfalo, Puente, Bulbo) -->
+                <path d="M 480,480 C 450,480 470,600 450,650 C 430,700 440,800 480,850 L 520,850 C 560,800 570,700 550,650 C 530,600 550,480 520,480 Z" fill="url(#brainGrad)" stroke="#475569" stroke-width="2"/>
+
+                <!-- Médula Espinal (Corte Transversal Ampliado) -->
+                <g transform="translate(500, 1000)">
+                    <ellipse cx="0" cy="0" rx="160" ry="100" fill="#cbd5e1" stroke="#64748b" stroke-width="3"/>
+                    <path d="M -5,98 L 5,98 L 5,30 L -5,30 Z" fill="#0f172a"/> <!-- Fisura Media -->
+                    <!-- Sustancia Gris (Láminas de Rexed) -->
+                    <path d="M -15,0 C -60,-20 -100,-70 -120,-60 C -130,-40 -90,0 -40,10 C -60,50 -100,80 -80,90 C -50,100 -20,50 -10,30 C 0,25 0,25 10,30 C 20,50 50,100 80,90 C 100,80 60,50 40,10 C 90,0 130,-40 120,-60 C 100,-70 60,-20 15,0 Z" fill="#94a3b8" stroke="#475569"/>
+                </g>
+
+                <!-- Piel (Periferia) -->
+                <rect x="60" y="880" width="160" height="200" rx="15" fill="url(#skinGrad)" stroke="#475569"/>
+                <path d="M 60,940 Q 140,920 220,940" fill="none" stroke="#64748b" stroke-width="1"/>
+                <text x="70" y="905" fill="#fbcfe8" font-size="12" opacity="0.6">Epidermis</text>
+                <text x="70" y="960" fill="#94a3b8" font-size="12">Dermis / Víscera</text>
+
+
+                <!-- ================= PATHWAYS / TRACTS ================= -->
+                
+                <!-- 1. Vía Somática (Roja) - Nociceptor -> GRD -> Asta -> Tálamo -> Corteza -->
+                <path class="tract-somatic" id="path-pain" d="
+                    M 140,920 
+                    Q 180,860 280,940 
+                    L 350,940 
+                    Q 390,940 400,900 
+                    C 420,1050 420,1070 480,1020 
+                    C 520,980 540,950 580,940
+                    L 580,850 L 580,450 
+                    Q 580,360 520,350 
+                    L 560,150" filter="url(#glowRed)"/>
+
+                <!-- 2. Vía Visceral / Autonómica (Verde) - Vago -> NTS -> PB -> Amígdala -->
+                <path class="tract-visceral" d="M 200,680 Q 300,630 440,680" filter="url(#glowGreen)"/> <!-- Vago -->
+                <path class="tract-visceral" d="M 440,680 Q 470,550 460,540 Q 450,350 410,300" filter="url(#glowGreen)"/> <!-- NTS a Amígdala -->
+
+                <!-- 3. Vía Descendente Inhibitoria (Cian) - Límbico -> SGPA -> RVM -> Médula -->
+                <path class="tract-descending" d="
+                    M 410,300 
+                    Q 450,400 480,460 
+                    Q 500,550 490,620 
+                    L 480,850 L 480,950 
+                    C 460,1020 440,1030 400,1000" filter="url(#glowCyan)"/>
+
+
+                <!-- ================= INTERACTIVE NODES ================= -->
+                
+                <!-- 1. Nociceptor -->
+                <g class="node-group" onclick="selectNode('nociceptor')">
+                    <circle class="node-hitbox" cx="140" cy="920" />
+                    <path d="M 140,920 L 120,890 M 140,920 L 145,880 M 140,920 L 160,890" fill="none" stroke="#ef4444" stroke-width="2"/>
+                    <circle class="node-core" cx="140" cy="920" r="7" fill="#ef4444"/>
+                    <text class="node-label" x="80" y="990" fill="#fca5a5">1. Nociceptor Periférico</text>
+                </g>
+
+                <!-- 2. Nervio y GRD -->
+                <g class="node-group" onclick="selectNode('nervio')">
+                    <circle class="node-hitbox" cx="300" cy="940" r="40"/>
+                    <!-- Mielina -->
+                    <rect x="200" y="934" width="35" height="12" rx="4" fill="#cbd5e1" transform="rotate(-15 200 934)"/>
+                    <rect x="245" y="934" width="35" height="12" rx="4" fill="#cbd5e1" transform="rotate(-5 245 934)"/>
+                    <circle class="node-core" cx="310" cy="935" r="14" fill="#818cf8"/>
+                    <text class="node-label" x="250" y="890" fill="#a5b4fc">2. Ganglio Raíz Dorsal (GRD)</text>
+                </g>
+
+                <!-- 3. Asta Dorsal / Sinapsis -->
+                <g class="node-group" onclick="selectNode('asta')">
+                    <circle class="node-hitbox" cx="400" cy="1000" />
+                    <circle class="node-core" cx="400" cy="1000" r="10" fill="#ef4444" filter="url(#glowRed)"/>
+                    <text class="node-label" x="250" y="1010" fill="#fca5a5">3. Asta Dorsal (Lámina II)</text>
+                </g>
+                
+                <!-- Decusación Label -->
+                <text x="470" y="1030" fill="#94a3b8" font-size="11" font-style="italic">Decusación</text>
+
+                <!-- 4. NTS (Tracto Solitario) -->
+                <g class="node-group" onclick="selectNode('nts')">
+                    <circle class="node-hitbox" cx="440" cy="680" />
+                    <ellipse class="node-core" cx="440" cy="680" rx="14" ry="20" fill="#10b981"/>
+                    <text class="node-label" x="260" y="685" fill="#6ee7b7">4. NTS (Núcleo Tracto Solitario)</text>
+                </g>
+
+                <!-- 5. Parabranquial -->
+                <g class="node-group" onclick="selectNode('pb')">
+                    <circle class="node-hitbox" cx="460" cy="540" />
+                    <circle class="node-core" cx="460" cy="540" r="9" fill="#34d399"/>
+                    <text class="node-label" x="250" y="545" fill="#6ee7b7">N. Parabranquial (Tálamo Visceral)</text>
+                </g>
+
+                <!-- 6. RVM / Locus Coeruleus -->
+                <g class="node-group" onclick="selectNode('rvm')">
+                    <circle class="node-hitbox" cx="490" cy="620" />
+                    <circle class="node-core" cx="490" cy="620" r="12" fill="#06b6d4"/>
+                    <text class="node-label" x="520" y="625" fill="#67e8f9">6. RVM / Locus Coeruleus</text>
+                </g>
+
+                <!-- 7. SGPA -->
+                <g class="node-group" onclick="selectNode('sgpa')">
+                    <circle class="node-hitbox" cx="480" cy="460" />
+                    <circle class="node-core" cx="480" cy="460" r="14" fill="#0ea5e9"/>
+                    <text class="node-label" x="510" y="465" fill="#7dd3fc">7. SGPA (Mesencéfalo)</text>
+                </g>
+
+                <!-- 8. Tálamo VPL -->
+                <g class="node-group" onclick="selectNode('talamo')">
+                    <circle class="node-hitbox" cx="520" cy="350" r="35"/>
+                    <ellipse cx="520" cy="350" rx="30" ry="22" fill="url(#thalamusGrad)" stroke="#94a3b8"/>
+                    <circle class="node-core" cx="510" cy="350" r="6" fill="#ef4444"/>
+                    <text class="node-label" x="560" y="355" fill="#cbd5e1">8. Tálamo (VPL/Intralaminar)</text>
+                </g>
+
+                <!-- 9. Sistema Límbico (Amígdala) -->
+                <g class="node-group" onclick="selectNode('limbico')">
+                    <circle class="node-hitbox" cx="410" cy="300" />
+                    <circle class="node-core" cx="410" cy="300" r="12" fill="#a855f7"/>
+                    <text class="node-label" x="220" y="305" fill="#c084fc">9. Amígdala / Cíngulo (S. Límbico)</text>
+                </g>
+
+                <!-- 10. Corteza Somatosensorial -->
+                <g class="node-group" onclick="selectNode('corteza')">
+                    <circle class="node-hitbox" cx="560" cy="150" r="40"/>
+                    <path class="node-core" d="M 540,150 L 560,130 L 580,150 Z" fill="#38bdf8"/>
+                    <text class="node-label" x="580" y="140" fill="#bae6fd">10. Corteza Somatosensorial (S1)</text>
+                </g>
+
+            </svg>
+        </div>
+
+        <!-- INFO PANEL -->
+        <div class="info-panel">
+            
+            <!-- Empty State -->
+            <div id="empty-state">
+                <i class="ph-light ph-cursor-click text-6xl text-slate-600 mb-4"></i>
+                <h2 class="text-xl font-semibold text-slate-300 mb-2">Selecciona una Estructura</h2>
+                <p class="text-sm text-slate-500 max-w-sm">Haz clic en los nodos interactivos del diagrama (piel, médula, cerebro) para explorar su fisiología y farmacología clínica detallada.</p>
+            </div>
+
+            <!-- Content State (Hidden by default) -->
+            <div id="content-state" class="hidden flex-col h-full">
+                
+                <!-- Panel Header -->
+                <div class="panel-header">
+                    <h2 id="node-title" class="text-3xl font-bold text-white tracking-tight mb-3">Título</h2>
+                    <div id="node-badges" class="flex flex-wrap gap-2"></div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tab-nav">
+                    <button class="tab-btn active" data-tab="fisiologia" onclick="switchTab('fisiologia')">
+                        <i class="ph ph-activity text-lg"></i> 1. Fisiología
+                    </button>
+                    <button class="tab-btn" data-tab="bloqueadores" onclick="switchTab('bloqueadores')">
+                        <i class="ph ph-shield-slash text-lg"></i> 2. Bloqueadores
+                    </button>
+                    <button class="tab-btn" data-tab="agonistas" onclick="switchTab('agonistas')">
+                        <i class="ph ph-lightning text-lg"></i> 3. Moduladores
+                    </button>
+                </div>
+
+                <!-- Tab Contents -->
+                <div id="tab-fisiologia" class="tab-content content-body active"></div>
+                <div id="tab-bloqueadores" class="tab-content content-body"></div>
+                <div id="tab-agonistas" class="tab-content content-body"></div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Database of Pharmacological and Physiological Data (Rev. 2026)
+        const medicalDB = {
+            'nociceptor': {
+                title: "Nociceptor (Terminal Periférica)",
+                badges: [
+                    { text: "Anatomía: Fibras Aδ y C", icon: "ph-person-arms-spread", color: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
+                    { text: "Función: Transducción", icon: "ph-lightning", color: "text-purple-400 bg-purple-400/10 border-purple-400/30" }
+                ],
+                fisiologia: `
+                    <p>Las terminaciones nerviosas libres detectan daño tisular (mecánico, térmico, químico). No poseen cápsula; la membrana celular responde directamente al daño.</p>
+                    <p><strong>La Sopa Inflamatoria:</strong> Tras la lesión, las células rotas liberan Bradiquinina, Prostaglandina E2 (PGE2), ATP, H+ e Histamina. Esto causa <i>Sensibilización Periférica</i> (hiperalgesia primaria), bajando el umbral de disparo del nervio.</p>
+                    <ul>
+                        <li><strong>TRPV1:</strong> Canal iónico receptor de calor nocivo (>43°C), pH ácido y capsaicina.</li>
+                        <li><strong>Nav1.7, Nav1.8, Nav1.9:</strong> Canales de Sodio (Na+) voltaje-dependientes exclusivos del nociceptor. Fundamentales para crear el potencial de acción.</li>
+                    </ul>
+                `,
+                bloqueadores: `
+                    <div class="drug-card blocker">
+                        <h4 class="text-red-400 font-bold mb-1">Suzetrigina (VX-548) <span class="tag-new">Aprobación FDA</span></h4>
+                        <p>Inhibidor alostérico altamente selectivo del canal <strong>Nav1.8</strong>. Corta la señal de dolor agudo directamente en la periferia, ofreciendo analgesia comparable a opioides, pero <strong>sin riesgo de adicción, sedación ni depresión respiratoria</strong>.</p>
+                    </div>
+                    <div class="drug-card blocker">
+                        <h4 class="text-red-400 font-bold mb-1">AINEs (Ketorolaco, Diclofenaco)</h4>
+                        <p>Inhiben la Ciclooxigenasa (COX 1/2). Previenen la síntesis de PGE2, evitando que la "sopa inflamatoria" sensibilice al receptor. Pilar de la analgesia preventiva.</p>
+                    </div>
+                    <div class="drug-card blocker">
+                        <h4 class="text-red-400 font-bold mb-1">Anestésicos Locales Tópicos/Infiltración</h4>
+                        <p>Bloqueo no selectivo de todos los canales de Sodio en el tejido infiltrado (ej. Lidocaína subcutánea).</p>
+                    </div>
+                `,
+                agonistas: `
+                    <div class="drug-card agonist">
+                        <h4 class="text-emerald-400 font-bold mb-1">Capsaicina (Parches 8%)</h4>
+                        <p>Agonista intenso del TRPV1. Causa un influjo masivo de Calcio que inicialmente arde, pero a largo plazo agota la Sustancia P y causa una "defoliación" reversible de la terminal (desensibilización prolongada para dolor neuropático).</p>
+                    </div>
+                `
+            },
+            'nervio': {
+                title: "Nervio Periférico / GRD",
+                badges: [
+                    { text: "Anatomía: Axón y Soma", icon: "ph-git-commit", color: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
+                    { text: "Función: Transmisión", icon: "ph-arrow-right", color: "text-purple-400 bg-purple-400/10 border-purple-400/30" }
+                ],
+                fisiologia: `
+                    <p>Conduce el potencial de acción hacia la médula. El cuerpo celular reside en el <strong>Ganglio de la Raíz Dorsal (GRD)</strong>, el cual NO está protegido por la barrera hematoencefálica.</p>
+                    <ul>
+                        <li><strong>Fibras A-delta (Aδ):</strong> Mielinizadas (saltatorias). Rápidas (5-30 m/s). Conducen el "primer dolor": punzante y bien localizado.</li>
+                        <li><strong>Fibras C:</strong> Amielínicas. Lentas (0.5-2 m/s). Conducen el "segundo dolor": sordo, quemante, difuso y duradero.</li>
+                    </ul>
+                    <p>En el dolor neuropático, el nervio dañado desarrolla canales de sodio ectópicos (dispara solo) y el GRD sufre cambios genéticos (plasticidad).</p>
+                `,
+                bloqueadores: `
+                    <div class="drug-card blocker">
+                        <h4 class="text-red-400 font-bold mb-1">Anestésicos Locales (Bupivacaína, Ropivacaína)</h4>
+                        <p>Base de la anestesia regional (Bloqueos de plexo). Entran al axón de forma no ionizada, se ionizan y bloquean el canal de Na+ desde el interior intracelular.</p>
+                        <p><em>Bloqueo Diferencial:</em> Las fibras C (sin mielina) se bloquean antes que las motoras A-alfa (gruesas).</p>
+                    </div>
+                    <div class="drug-card blocker">
+                        <h4 class="text-red-400 font-bold mb-1">Gabapentinoides (Pregabalina, Gabapentina)</h4>
+                        <p>Actúan fuertemente en el GRD uniéndose a la subunidad α2-δ de los canales de Calcio, reduciendo la entrada de Ca2+ y frenando la liberación de neurotransmisores en la médula.</p>
+                    </div>
+                `,
+                agonistas: `
+                    <p class="text-slate-400 italic">No existen agonistas farmacológicos de uso clínico para estimular la transmisión nerviosa del dolor, excepto factores endógenos (NGF) en investigación.</p>
+                `
+            },
+            'asta': {
+                title: "Asta Dorsal de la Médula",
+                badges: [
+                    { text: "Anatomía: Sustancia Gelatinosa (Lámina II)", icon: "ph-intersect", color: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
+                    { text: "Función: Modulación / Sinapsis", icon: "ph-arrows-left-right", color: "text-purple-400 bg-purple-400/10 border-purple-400/30" }
+                ],
+                fisiologia: `
+                    <p>La estación de peaje primaria. La 1ra neurona libera <strong>Glutamato</strong> (rápido) y <strong>Sustancia P / CGRP</strong> (lentos) para activar a la 2da neurona (que cruzará la médula).</p>
+                    <p><strong>El rol crítico de la Microglía:</strong><br>
+                    Tras un daño crónico, la microglía espinal se activa mediante receptores P2X4. Libera BDNF, el cual altera el transportador de cloruro (KCC2) de la 2da neurona. Resultado: <strong>el GABA (inhibidor natural) se vuelve excitatorio</strong>, causando Alodinia e Hiperalgesia (Sensibilización Central).</p>
+                `,
+                bloqueadores: `
+                    <div class="drug-card blocker">
+                        <h4 class="text-red-400 font-bold mb-1">Antagonistas NMDA (Ketamina, Magnesio)</h4>
+                        <p>Bloquean el receptor NMDA (activado por Glutamato). Esto previene o revierte el "Wind-up" (sumación temporal), cortando de raíz la hipersensibilidad central.</p>
+                    </div>
+                    <div class="drug-card blocker">
+                        <h4 class="text-red-400 font-bold mb-1">Anestesia Neuroaxial (Epidural / Raquídea)</h4>
+                        <p>Baño directo de las raíces y el asta dorsal con Anestésicos Locales para un bloqueo total segmentario.</p>
+                    </div>
+                `,
+                agonistas: `
+                    <div class="drug-card agonist">
+                        <h4 class="text-emerald-400 font-bold mb-1">Opioides Neuroaxiales (Morfina, Fentanilo)</h4>
+                        <p>Agonistas Mu (μ). Ataque doble: 1) Presináptico: Cierran canales de Ca2+ (no sale glutamato). 2) Postsináptico: Abren canales de K+ (hiperpolarizan la 2da neurona).</p>
+                    </div>
+                    <div class="drug-card agonist">
+                        <h4 class="text-emerald-400 font-bold mb-1">Agonistas Alfa-2 (Dexmedetomidina, Clonidina)</h4>
+                        <p>Simulan a la Noradrenalina descendente natural. Hiperpolarizan las neuronas del asta. Adyuvantes estelares en bloqueos.</p>
+                    </div>
+                `
+            },
+            'nts': {
+                title: "Núcleo del Tracto Solitario (NTS)",
+                badges: [
+                    { text: "Anatomía: Bulbo Raquídeo", icon: "ph-brain", color: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
+                    { text: "Función: Integración Visceral Autonómica", icon: "ph-heartbeat", color: "text-purple-400 bg-purple-400/10 border-purple-400/30" }
+                ],
+                fisiologia: `
+                    <p>El gran centro de comando autonómico. A diferencia del dolor de la piel (somático), <strong>el dolor de órganos internos (visceral) viaja directamente al NTS</strong> a través del Nervio Vago y el tracto espinosolitario.</p>
+                    <p>El NTS distribuye la alarma hacia el Núcleo Parabranquial (PB), la Amígdala y el Hipotálamo. Esto coordina las intensas respuestas autonómicas reflejas al dolor: Taquicardia, sudoración fría, cambios de presión arterial y <strong>náuseas/vómitos severos</strong>.</p>
+                `,
+                bloqueadores: `
+                    <div class="drug-card blocker">
+                        <h4 class="text-red-400 font-bold mb-1">Antieméticos (Ondansetrón, Droperidol, Aprepitant)</h4>
+                        <p>El dolor visceral y los fármacos opioides bombardean el NTS y el área postrema. Bloquear los receptores 5-HT3, D2 y NK1 en esta zona es imperativo en anestesia para prevenir las Náuseas y Vómitos Postoperatorios (NVPO).</p>
+                    </div>
+                `,
+                agonistas: `
+                    <div class="drug-card agonist">
+                        <h4 class="text-emerald-400 font-bold mb-1">Efecto Adverso de los Opioides</h4>
+                        <p>Los opioides son potentes agonistas Mu en el NTS. Su acción aquí deprime reflejos cardiovasculares (causando bradicardia vagal) y estimula violentamente los centros del vómito colindantes.</p>
+                    </div>
+                    <div class="drug-card agonist">
+                        <h4 class="text-emerald-400 font-bold mb-1">Neuromodulación Vagal (tVNS)</h4>
+                        <p>Estimular eléctricamente el nervio vago activa el NTS, provocando que este encienda el freno descendente (SGPA y LC), induciendo analgesia no farmacológica.</p>
+                    </div>
+                `
+            },
+            'pb': {
+                title: "Núcleo Parabranquial (PB)",
+                badges: [
+                    { text: "Anatomía: Protuberancia (Puente)", icon: "ph-brain", color: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
+                    { text: "Función: Relevo Afectivo-Visceral", icon: "ph-warning", color: "text-purple-400 bg-purple-400/10 border-purple-400/30" }
+                ],
+                fisiologia: `
+                    <p>Conocido como el "Tálamo Visceral". Recibe toda la carga de sufrimiento desde el NTS y el asta dorsal superficial, y <strong>la dispara directamente a la Amígdala</strong> (Sistema Límbico) sin pasar por el filtro de la corteza consciente.</p>
+                    <p>Esta vía ultrarrápida es la razón anatómica por la que un cólico biliar o un infarto generan una sensación inmediata de "muerte inminente", pánico y angustia extrema, a diferencia de un corte superficial en la piel.</p>
+                `,
+                bloqueadores: `<p class="text-slate-400 italic">Manejo indirecto mediante ansiolíticos (Benzodiacepinas) que atenúan la respuesta límbica (Amígdala) a estas proyecciones, más que bloquear el PB directamente.</p>`,
+                agonistas: `<p class="text-slate-400 italic">Sin dianas farmacológicas directas exclusivas de uso clínico habitual.</p>`
+            },
+            'sgpa': {
+                title: "Sustancia Gris Periacueductal (SGPA)",
+                badges: [
+                    { text: "Anatomía: Mesencéfalo", icon: "ph-target", color: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
+                    { text: "Función: Centro de Mando Inhibitorio", icon: "ph-shield-check", color: "text-purple-400 bg-purple-400/10 border-purple-400/30" }
+                ],
+                fisiologia: `
+                    <p>El <strong>"Comandante en Jefe" del sistema analgésico endógeno</strong>. Rodea el acueducto de Silvio.</p>
+                    <p>Recibe información de contexto (miedo, estrés de vida o muerte) desde el Cíngulo y la Amígdala. Posee una enorme concentración de receptores de endorfinas/encefalinas.</p>
+                    <p>No bloquea el dolor directamente; al activarse, envía órdenes a los "soldados" de abajo (RVM y Locus Coeruleus) para que liberen Serotonina y Noradrenalina en la médula y apaguen el estímulo entrante.</p>
+                `,
+                bloqueadores: `
+                    <div class="drug-card blocker">
+                        <h4 class="text-red-400 font-bold mb-1">Naloxona</h4>
+                        <p>Antagonista opioide competitivo. Bloquea los receptores en la SGPA, revirtiendo la anestesia, pero también "estropeando" el sistema de defensa natural (las endorfinas endógenas).</p>
+                    </div>
+                `,
+                agonistas: `
+                    <div class="drug-card agonist">
+                        <h4 class="text-emerald-400 font-bold mb-1">Opioides Sistémicos (Acción Supraspinal)</h4>
+                        <p>La morfina sistémica actúa masivamente aquí, suplantando a las endorfinas e <strong>encendiendo artificialmente todo el sistema inhibitorio descendente</strong> desde arriba.</p>
+                    </div>
+                `
+            },
+            'rvm': {
+                title: "RVM y Locus Coeruleus (Vías Descendentes)",
+                badges: [
+                    { text: "Anatomía: Bulbo y Puente", icon: "ph-git-branch", color: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
+                    { text: "Función: Ejecución del Freno", icon: "ph-anchor", color: "text-purple-400 bg-purple-400/10 border-purple-400/30" }
+                ],
+                fisiologia: `
+                    <p>Son los ejecutores de las órdenes de la SGPA. Envían largos tractos hacia el Asta Dorsal.</p>
+                    <ul>
+                        <li><strong>Locus Coeruleus:</strong> Libera <strong>Noradrenalina</strong>. Tiene un efecto estrictamente analgésico en la médula (activando receptores alfa-2 inhibidores).</li>
+                        <li><strong>RVM (Médula Rostral Ventromedial):</strong> Libera <strong>Serotonina (5-HT)</strong>. <br><em>Paradoja Clínica:</em> En dolor agudo, frena el dolor (receptores 5-HT1A). Pero en dolor crónico, cambia de bando y actúa sobre receptores 5-HT3 espinales, <strong>facilitando/empeorando</strong> el dolor.</li>
+                    </ul>
+                `,
+                bloqueadores: `
+                    <div class="drug-card blocker">
+                        <h4 class="text-red-400 font-bold mb-1">Ondansetrón</h4>
+                        <p>Además de antiemético, al bloquear el receptor 5-HT3 en la médula, puede interrumpir la vía serotoninérgica <em>facilitadora</em> que empeora el dolor neuropático.</p>
+                    </div>
+                `,
+                agonistas: `
+                    <div class="drug-card agonist">
+                        <h4 class="text-emerald-400 font-bold mb-1">Antidepresivos Tricíclicos e IRSN (Duloxetina, Amitriptilina)</h4>
+                        <p>Bloquean la recaptura de Noradrenalina y Serotonina espinal. Al no ser recapturados, se acumulan masivamente, <strong>potenciando el freno natural</strong>. Primera línea para dolor neuropático.</p>
+                    </div>
+                    <div class="drug-card agonist">
+                        <h4 class="text-emerald-400 font-bold mb-1">Analgésicos Duales Atípicos (Tramadol, Tapentadol)</h4>
+                        <p>Además de ser opioides (agonistas Mu), inhiben la recaptura de Noradrenalina (Tapentadol) y Serotonina (Tramadol), reforzando estas vías de forma brutal.</p>
+                    </div>
+                `
+            },
+            'talamo': {
+                title: "Tálamo (VPL e Intralaminar)",
+                badges: [
+                    { text: "Anatomía: Diencéfalo", icon: "ph-arrows-out", color: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
+                    { text: "Función: Relevo y Bifurcación", icon: "ph-git-fork", color: "text-purple-400 bg-purple-400/10 border-purple-400/30" }
+                ],
+                fisiologia: `
+                    <p>La gran aduana del cerebro. Recibe el tracto espinotalámico y divide el dolor en dos dimensiones humanas separadas:</p>
+                    <ul>
+                        <li><strong>Núcleo Ventral Posterolateral (VPL):</strong> Proyecta a la Corteza S1. Responde: <em>"¿Dónde me duele y qué tipo de dolor es?"</em> (Dimensión Sensorial-Discriminativa).</li>
+                        <li><strong>Núcleos Intralaminares:</strong> Proyectan al Sistema Límbico (Amígdala/Cíngulo). Responden: <em>"¡Esto es horrible, haz que pare!"</em> (Dimensión Afectiva-Motivacional).</li>
+                    </ul>
+                `,
+                bloqueadores: `
+                    <div class="drug-card blocker">
+                        <h4 class="text-red-400 font-bold mb-1">Anestésicos Generales Inhalatorios / Propofol</h4>
+                        <p>A dosis profundas (anestesia quirúrgica), interrumpen el bucle de retroalimentación tálamo-cortical. Al silenciar el tálamo, la señal jamás llega a la conciencia.</p>
+                    </div>
+                `,
+                agonistas: `<p class="text-slate-400 italic">La modulación aquí es indirecta mediante fármacos de acción central global.</p>`
+            },
+            'limbico': {
+                title: "Sistema Límbico (Amígdala y Cíngulo)",
+                badges: [
+                    { text: "Anatomía: Cerebro Profundo", icon: "ph-brain", color: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
+                    { text: "Función: Afecto, Sufrimiento, Memoria", icon: "ph-smiley-sad", color: "text-purple-400 bg-purple-400/10 border-purple-400/30" }
+                ],
+                fisiologia: `
+                    <p>Responsable del <strong>sufrimiento humano</strong> real. La Corteza Cingulada Anterior (CCA) evalúa lo desagradable del estímulo. La Amígdala codifica el miedo y la memoria traumática del dolor.</p>
+                    <p>En el dolor crónico, la amígdala sufre hipertrofia funcional, llevando a ansiedad y depresión severa comórbida. Además, es desde la CCA/Amígdala donde nace la orden cortical para encender el freno descendente (SGPA).</p>
+                `,
+                bloqueadores: `
+                    <div class="drug-card blocker">
+                        <h4 class="text-red-400 font-bold mb-1">Ketamina (Dosis subanestésicas)</h4>
+                        <p>Además de la médula, actúa aquí con un potente efecto antidepresivo rápido, promoviendo nueva sinaptogénesis (vía mTor) y "reseteando" las redes límbicas asociadas al dolor crónico severo.</p>
+                    </div>
+                    <div class="drug-card blocker">
+                        <h4 class="text-red-400 font-bold mb-1">Benzodiacepinas (Midazolam, Diazepam)</h4>
+                        <p>Deprimen la hiperactividad amigdalina. NO son analgésicos (no reducen la nocicepción), pero reducen drásticamente el sufrimiento, el miedo y la ansiedad anticipatoria.</p>
+                    </div>
+                `,
+                agonistas: `
+                    <div class="drug-card agonist">
+                        <h4 class="text-emerald-400 font-bold mb-1">Opioides Fuertes</h4>
+                        <p>Producen euforia y un profundo aplanamiento afectivo límbico. Alteran la percepción al punto que el paciente declara: <em>"Siento que me duele, pero ya no me importa"</em>.</p>
+                    </div>
+                `
+            },
+            'corteza': {
+                title: "Corteza Somatosensorial (S1)",
+                badges: [
+                    { text: "Anatomía: Lóbulo Parietal (Área 3,1,2)", icon: "ph-map-trifold", color: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
+                    { text: "Función: Percepción Consciente", icon: "ph-eye", color: "text-purple-400 bg-purple-400/10 border-purple-400/30" }
+                ],
+                fisiologia: `
+                    <p>Ubicada en el giro postcentral. Contiene el <strong>Homúnculo de Penfield</strong>, un mapa somatotópico del cuerpo.</p>
+                    <p>Es la única área que te permite localizar y cualificar el dolor con exactitud matemática: <em>"Me duele la punta del dedo índice izquierdo, es un dolor punzante, y su intensidad es 7 de 10"</em>.</p>
+                `,
+                bloqueadores: `
+                    <div class="drug-card blocker">
+                        <h4 class="text-red-400 font-bold mb-1">Anestésicos Generales (Propofol, Sevoflurano)</h4>
+                        <p>Depresión metabólica y eléctrica global de la corteza (vía hiperpolarización por receptores GABA-A), induciendo inconsciencia total y amnesia.</p>
+                    </div>
+                `,
+                agonistas: `
+                    <div class="drug-card agonist">
+                        <h4 class="text-emerald-400 font-bold mb-1">Paracetamol (Acetaminofén)</h4>
+                        <p>Cruza la barrera hematoencefálica y ejerce acción casi exclusivamente en el SNC. Inhibe isoformas centrales de la COX y su metabolito AM404 modula receptores cannabinoides endógenos, <strong>elevando el umbral global de percepción</strong> en la corteza.</p>
+                    </div>
+                `
+            }
+        };
+
+        // --- Interaction Logic ---
+        function selectNode(nodeId) {
+            // Hide empty state, show content state
+            document.getElementById('empty-state').style.display = 'none';
+            document.getElementById('content-state').classList.remove('hidden');
+            document.getElementById('content-state').classList.add('flex');
+
+            const data = medicalDB[nodeId];
+            if (!data) return;
+
+            // Populate Title and Badges
+            document.getElementById('node-title').innerText = data.title;
+            const badgeContainer = document.getElementById('node-badges');
+            badgeContainer.innerHTML = data.badges.map(b => 
+                `<span class="badge border ${b.color}"><i class="ph-bold ${b.icon}"></i> ${b.text}</span>`
+            ).join('');
+
+            // Populate Tab Content
+            document.getElementById('tab-fisiologia').innerHTML = data.fisiologia;
+            document.getElementById('tab-bloqueadores').innerHTML = data.bloqueadores;
+            document.getElementById('tab-agonistas').innerHTML = data.agonistas;
+
+            // Reset to first tab
+            switchTab('fisiologia');
+        }
+
+        function switchTab(tabId) {
+            // Reset all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'border-cyan-400', 'border-red-400', 'border-emerald-400');
+            });
+            
+            // Set active button
+            const activeBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+            activeBtn.classList.add('active');
+            
+            // Reset all contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Set active content
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+        }
+    </script>
+</body>
+</html>
