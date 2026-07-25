@@ -88,23 +88,95 @@
         .sim-btn.active-block { background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fca5a5; box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
         .sim-btn.active-enhance { background: rgba(6, 182, 212, 0.2); border-color: #06b6d4; color: #a5f3fc; box-shadow: 0 0 15px rgba(6, 182, 212, 0.3); }
 
-        .ia-fab { position: fixed; bottom: 2rem; right: 2rem; background: linear-gradient(135deg, #a855f7, #7e22ce); color: white; border: none; padding: 14px 28px; border-radius: 30px; font-size: 0.95rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4); z-index: 1000; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .ia-fab:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 25px rgba(168, 85, 247, 0.6); }
+        /* Estilos del Módulo de IA (Gemini) */
+        .ia-fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: white;
+            border: none;
+            padding: 16px 24px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
+            z-index: 10000;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .ia-fab:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(139, 92, 246, 0.6);
+        }
         
-        .ia-panel { position: fixed; bottom: 6rem; right: 2rem; width: 380px; height: 600px; max-height: 80vh; background: #080c16; display: flex; flex-direction: column; border-radius: 16px; border: 1px solid rgba(168, 85, 247, 0.3); box-shadow: 0 15px 50px rgba(0,0,0,0.8); z-index: 999; transform: translateY(20px) scale(0.95); opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-origin: bottom right; }
-        .ia-panel.open { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
-        .ia-header { padding: 1.2rem; background: linear-gradient(90deg, #3b0764 0%, #080c16 100%); border-bottom: 1px solid rgba(168, 85, 247, 0.3); display: flex; justify-content: space-between; align-items: center; font-weight: bold; border-radius: 16px 16px 0 0; }
-        .ia-chat-box { flex: 1; padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; font-size: 0.9rem; }
+        .ia-panel {
+            position: fixed;
+            bottom: 90px;
+            right: 30px;
+            width: 400px;
+            height: 550px;
+            max-height: 80vh;
+            background: #0f172a;
+            display: flex;
+            flex-direction: column;
+            border-radius: 16px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.8);
+            z-index: 9999;
+            transform: translateY(20px) scale(0.95);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-origin: bottom right;
+        }
+        .ia-panel.open {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .ia-header {
+            padding: 1.2rem;
+            background: linear-gradient(90deg, #2e1065 0%, #0f172a 100%);
+            border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            border-radius: 16px 16px 0 0;
+        }
+        
+        .ia-chat-box {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            font-size: 0.95rem;
+        }
+        
         .msg { padding: 12px 16px; border-radius: 12px; max-width: 85%; line-height: 1.5; }
-        .msg.ia { background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.2); color: #e9d5ff; align-self: flex-start; border-bottom-left-radius: 0; }
+        .msg.ia { background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); color: #ddd6fe; align-self: flex-start; border-bottom-left-radius: 0; }
         .msg.user { background: #1e293b; color: white; align-self: flex-end; border-bottom-right-radius: 0; border: 1px solid #334155; }
-        .ia-input-area { padding: 1.2rem; border-top: 1px solid var(--border-color); display: flex; gap: 10px; background: #0b1120; border-radius: 0 0 16px 16px; }
-        .ia-input { flex: 1; background: #1e293b; border: 1px solid #334155; padding: 10px 14px; border-radius: 8px; color: white; outline: none; transition: border-color 0.2s; }
-        .ia-input:focus { border-color: var(--accent-ia); }
-        .ia-send-btn { background: var(--accent-ia); border: none; color: white; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
-        .ia-send-btn:hover { background: #9333ea; }
         
-        /* Animación de escritura IA */
+        .ia-input-area {
+            padding: 1.2rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+            background: #0b1120;
+            border-radius: 0 0 16px 16px;
+        }
+        .ia-input { flex: 1; background: #1e293b; border: 1px solid #334155; padding: 12px 14px; border-radius: 8px; color: white; outline: none; transition: border-color 0.2s; }
+        .ia-input:focus { border-color: #8b5cf6; }
+        .ia-send-btn { background: #8b5cf6; border: none; color: white; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        .ia-send-btn:hover { background: #7c3aed; }
+
         .loading-dots:after { content: '.'; animation: dots 1.5s steps(5, end) infinite; }
         @keyframes dots { 0%, 20% { color: rgba(0,0,0,0); text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0);} 40% { color: white; text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0);} 60% { text-shadow: .25em 0 0 white, .5em 0 0 rgba(0,0,0,0);} 80%, 100% { text-shadow: .25em 0 0 white, .5em 0 0 white;}}
 
@@ -291,24 +363,25 @@
         </div>
     </div>
 
+    <!-- Módulo de Asistente IA Flotante -->
     <button class="ia-fab" onclick="toggleIAPanel()">
         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-1 15h-2v-2h2v2zm1-4c-1.1 0-2-.9-2-2V9c0-1.1.9-2 2-2s2 .9 2 2v2c0 1.1-.9 2-2 2z"/></svg>
-        Consultar IA
+        Consultar IA Clínica
     </button>
 
     <div class="ia-panel" id="ia-panel">
         <div class="ia-header">
-            <div class="flex items-center gap-2">
-                <svg class="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-1 15h-2v-2h2v2zm1-4c-1.1 0-2-.9-2-2V9c0-1.1.9-2 2-2s2 .9 2 2v2c0 1.1-.9 2-2 2z"/></svg>
-                <span>Asistente IA Gemini</span>
+            <div class="flex items-center gap-3">
+                <svg class="w-6 h-6 text-purple-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-1 15h-2v-2h2v2zm1-4c-1.1 0-2-.9-2-2V9c0-1.1.9-2 2-2s2 .9 2 2v2c0 1.1-.9 2-2 2z"/></svg>
+                <span>Asistente Clínico IA</span>
             </div>
-            <button onclick="toggleIAPanel()" class="text-slate-400 hover:text-white bg-transparent border-none cursor-pointer text-lg font-bold">✕</button>
+            <button onclick="toggleIAPanel()" class="text-slate-400 hover:text-white bg-transparent border-none cursor-pointer text-xl font-bold">✕</button>
         </div>
         <div class="ia-chat-box" id="chat-box">
-            <div class="msg ia">Hola, soy tu asistente clínico IA. Haz clic en una estructura del mapa o hazme una pregunta directa sobre anestesiología y farmacología.</div>
+            <div class="msg ia">Hola. Soy tu asistente experto en neurofarmacología. Haz clic en una estructura del atlas anatómico o hazme una pregunta directa sobre anestesiología.</div>
         </div>
         <div class="ia-input-area">
-            <input type="text" id="ia-input" class="ia-input" placeholder="Pregunta sobre fármacos..." onkeypress="handleEnter(event)">
+            <input type="text" id="ia-input" class="ia-input" placeholder="Pregunta clínica..." onkeypress="handleEnter(event)">
             <button class="ia-send-btn" onclick="sendMessage()">Enviar</button>
         </div>
     </div>
@@ -572,7 +645,6 @@
         window.addEventListener('mouseup', () => { 
             isDragging = false; 
             svgWorkspace.style.cursor = 'grab'; 
-            // Resetear flag tras un pequeño delay
             setTimeout(() => wasDragged = false, 50); 
         });
         
@@ -581,6 +653,7 @@
             svgWorkspace.style.cursor = 'grab'; 
         });
 
+        // ================= MÓDULO IA GEMINI =================
         // ATENCIÓN: Reemplaza "TU_API_KEY_AQUI" con tu clave real de Google AI Studio.
         const GEMINI_API_KEY = "TU_API_KEY_AQUI"; 
         const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
@@ -599,15 +672,14 @@
             addMessage(message, 'user');
             inputField.value = '';
             
-            const loadingId = addMessage('Analizando evidencia clínica...', 'ia', true);
+            const loadingId = addMessage('Analizando bibliografía clínica...', 'ia', true);
 
             try {
                 if (GEMINI_API_KEY === "TU_API_KEY_AQUI") {
-                    throw new Error("API Key no detectada. Por favor, inserta tu clave de Google Gemini en el código fuente (línea 316) para activar el asistente.");
+                    throw new Error("Para que la IA funcione, debes insertar tu clave API de Gemini en la línea 635 del código fuente.");
                 }
 
-                // Prompt con contexto anatómico
-                const systemPrompt = `Eres un asistente médico experto en anestesiología. Responde de forma precisa. El usuario está viendo la estructura: "${currentContext}". Pregunta: ${message}`;
+                const systemPrompt = `Eres un médico especialista en anestesiología y farmacología. Responde de forma clínica y precisa a otros profesionales. El usuario está visualizando el atlas en la estructura: "${currentContext}". Pregunta del usuario: ${message}`;
                 
                 const response = await fetch(`${API_URL}?key=${GEMINI_API_KEY}`, {
                     method: 'POST',
@@ -624,7 +696,7 @@
                 updateMessage(loadingId, formatText(reply), 'ia');
 
             } catch (error) {
-                updateMessage(loadingId, `⚠️ <b>Aviso del Sistema:</b> ${error.message}`, 'ia');
+                updateMessage(loadingId, `⚠️ <b>Aviso:</b> ${error.message}`, 'ia');
             }
         }
 
@@ -650,6 +722,7 @@
             if (msgDiv) {
                 msgDiv.innerHTML = text;
                 msgDiv.className = `msg ${sender}`;
+                msgDiv.classList.remove('loading-dots');
             }
         }
     </script>
